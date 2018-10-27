@@ -1,4 +1,5 @@
 from weather_predict import *
+from get_news import *
 import random
 from classify import *
 from translate import *
@@ -10,7 +11,7 @@ from telebot import types
 from movie import *
 
 
-token = '655665228:AAGfa7LvWw46UzckGEMbyG3HZ4-XTo3nQ0E'
+token = '787436782:AAFhoQj_7_saYbklfTS3ekiHbljGYl0yEyU'
 
 Wrench = emojize(":wrench:", use_aliases=True)
 Movie_camera = emojize(":movie_camera:", use_aliases=True)
@@ -33,12 +34,12 @@ answer_action = ['Тихо жду здесь пока у меня что-то с
 answer_status_good = ['Рада слышать', 'Круто', 'Отлично!', 'Я очень рада :)']
 answer_status_bad = ['Мне очень жаль', 'Не грустите пожалуйста', 'Не грустите, а то мне тоже станет грустно']
 help_text = ('''Я являюсь виртуальным помощником который может понимать ваши текстовые и аудио сообщения\n
-    {} Благодаря этому я могу выполнять следующие функций:
+    {} Благодаря этому я могу выполнять следующие функции:
 
     {} Я могу выдать вам точный прогноз погоды на четыре дня. Например: "Какая погода завтра в Астане"
-    
+
     {} Я могу искать сеансы фильмов для вас. Например: "афиша кино Астана"
-    
+
     {} Я могу просто вести обычный человеческий диалог. Например: "Привет. Как дела?" ''').format(Wrench, Earth, Movie_camera, Speach_baloon)
 start_text = ('''Здравствуйте!
         Я виртуальный помощник Айка. Я новичок и пока что поселилась здесь в телеграме. Если хотите узнать что я умею можешь спросить. Или по команде /help''')
@@ -79,9 +80,9 @@ def handle_message(message):
                 elif(predicted_class == 'philosophy'):
                     bot.send_message(message.chat.id, answer_philosophy[0])
                 elif(predicted_class == 'thanks'):
-                    bot.send_message(message.chat.id, answer_thanks[random.randint(0,(len(answer_thanks)-1))])  
+                    bot.send_message(message.chat.id, answer_thanks[random.randint(0,(len(answer_thanks)-1))])
                 elif(predicted_class == 'help'):
-                    bot.send_message(message.chat.id, help_text) 
+                    bot.send_message(message.chat.id, help_text)
                 elif(predicted_class == 'action'):
                     bot.send_message(message.chat.id, answer_action[random.randint(0,(len(answer_action)-1))])
                 elif(predicted_class == 'status_bad'):
@@ -98,13 +99,15 @@ def handle_message(message):
                     bot.send_message(message.chat.id, answer_your_master[random.randint(0,(len(answer_your_master)-1))])
                 elif(predicted_class == 'creator'):
                     bot.send_message(message.chat.id, answer_creator[random.randint(0,(len(answer_creator)-1))])
+                elif(predicted_class == 'news'):
+                    bot.send_message(message.chat.id, returnNews())
                 elif(predicted_class == 'joke'):
                     answer = answer_jokes[random.randint(0,(len(answer_jokes)-1))]
                     bot.send_message(message.chat.id, answer)
                     if(answer == answer_jokes[1]):
                         bot.send_voice(message.chat.id, open('joke.mp3', 'rb'))
                 elif(predicted_class == 'bye'):
-                    bot.send_message(message.chat.id, answer_bye[random.randint(0,(len(answer_bye)-1))])    
+                    bot.send_message(message.chat.id, answer_bye[random.randint(0,(len(answer_bye)-1))])
                 else:
                     bot.send_message(message.chat.id, 'Извините, я вас не понимаю, но я учусь')
         except:
@@ -116,7 +119,7 @@ def handle_message(message):
             command = speech_to_text(bytes=file.content)
         except:
             bot.send_message(message.chat.id, 'Распознование голоса не удалось, попробуйте снова')
-        try:    
+        try:
             predicted_class = classify(command)
             if(predicted_class == 'weather'):
                 output, speech = get_weather(command)
@@ -144,7 +147,7 @@ def handle_message(message):
                 answer = answer_philosophy[0]
                 voice = get_voice(answer)
                 # bot.send_message(message.chat.id, answer)
-                bot.send_voice(message.chat.id, voice) 
+                bot.send_voice(message.chat.id, voice)
             elif(predicted_class == 'action'):
                 answer = answer_action[random.randint(0,(len(answer_action)-1))]
                 voice = get_voice(answer)
@@ -218,93 +221,12 @@ class User:
 
 user_dict = {}
 
-city_dict_names_as_key = get_city_dict()
-city_list_for_movie = city_dict_names_as_key.keys()
-city_dict_id_as_key = {}
-
-
-for x in city_list_for_movie:
-    city_dict_id_as_key[city_dict_names_as_key[x]] = x
-
-
-
-def draw_city_list():
-    markup = types.InlineKeyboardMarkup()
-    row = []
-    i = 0
-    for x in city_list_for_movie:
-        i += 1
-        if(i % 3 != 0):
-            row.append(types.InlineKeyboardButton(x, callback_data="movie " + str(city_dict_names_as_key[x])))
-        else:
-            markup.row(*row)
-            row = []
-            row.append(types.InlineKeyboardButton(x, callback_data="movie " + str(city_dict_names_as_key[x])))
-    if(len(row) != 0):
-        markup.row(*row)
-    
-    return markup
-
-def draw_movie_list(city_id):
-    markup = types.InlineKeyboardMarkup()
-    movie_list = get_movie_list(city_id)
-    row = []
-    i = 0
-    for x in movie_list:
-        i += 1
-        if(i % 2 != 0):
-            row.append(types.InlineKeyboardButton(text=x, callback_data="cinema " + str(get_movie_id(city_id, x))))
-        else:
-            markup.row(*row)
-            row = []
-            row.append(types.InlineKeyboardButton(text=x, callback_data="cinema " + str(get_movie_id(city_id, x))))
-    if(len(row) != 0):
-        markup.row(*row)
-    markup.add(types.InlineKeyboardButton("Назад к выбору города", callback_data="back_to_city"))
-    return markup
-
-def draw_cinema_list(city_id):
-    cinema_list = get_cinema_list(city_id)
-    markup = types.InlineKeyboardMarkup()
-    for x in cinema_list:
-        markup.add(types.InlineKeyboardButton(text=x, callback_data="sessions " + str(get_cinema_id(city_id, x))))
-    markup.add(types.InlineKeyboardButton("Назад к выбору фильма", callback_data="back_to_movie"))
-    return markup
-
-def draw_seesions_list(city_id, movie_id, cinema_id, cinema_name):
-    markup = types.InlineKeyboardMarkup()
-    sessions_list = get_session_list(city_id, movie_id, cinema_id)
-    for x in sessions_list:
-        markup.add(types.InlineKeyboardButton(text=x, callback_data="ignore"))
-    markup.add(types.InlineKeyboardButton(text="Купить билеты в " + cinema_name, url=get_ticket_url(cinema_name, city_id)))
-    markup.add(types.InlineKeyboardButton(text="Назад к выбору кинотеатра", callback_data="back_to_cinema"))
-    return markup
-
-
-
-@bot.message_handler(commands=['movie'])
-def start_movie_helper(message):
-    chat_id = message.chat.id
-    text = message.text
-    city_id = extract_city_id(text)
-    user = User(chat_id)
-    if(city_id == 0):
-        markup = draw_city_list()
-        bot.send_message(chat_id, "Выберите город из списка ниже: ", reply_markup=markup)
-    else:
-        markup = draw_movie_list(city_id)
-        bot.send_message(chat_id, "Какой фильм хотите посмотреть?", reply_markup=markup)
-        user = User(chat_id)
-        user.city_id = city_id
-        user.cinema_name = city_dict_id_as_key[city_id]        
-        user_dict[chat_id] = user
-    
 @bot.callback_query_handler(func=lambda call: True)
 def message_query_handler(call):
     raw_message = call.data.split()
     message_type = raw_message[0]
     message = ' '.join(raw_message[1:])
-    
+
     chat_id = call.message.chat.id
     try:
         user = user_dict[chat_id]
@@ -355,7 +277,7 @@ def movie_start(message , text):
         bot.send_message(chat_id, "Какой фильм хотите посмотреть?", reply_markup=markup)
         user = User(chat_id)
         user.city_id = city_id
-        user.cinema_name = city_dict_id_as_key[city_id]        
+        user.cinema_name = city_dict_id_as_key[city_id]
         user_dict[chat_id] = user
 
 if __name__ == '__main__':
